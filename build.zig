@@ -550,6 +550,40 @@ pub fn build(b: *std.Build) void {
             run_cmd.addArgs(args);
         }
     }
+
+    // Build the audio capture example.
+    {
+        const audio_capture = b.addExecutable(.{
+            .name = "audio-capture",
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/examples/audio_capture.zig"),
+                .target = target,
+                .optimize = optimize,
+            }),
+        });
+
+        if (use_zig_module) {
+            audio_capture.root_module.addImport("pipewire", libpipewire_zig);
+        } else {
+            audio_capture.linkLibrary(libpipewire);
+            audio_capture.root_module.addImport("pipewire", c);
+        }
+
+        audio_capture.root_module.addOptions("example_options", example_options);
+
+        b.installArtifact(audio_capture);
+
+        const run_step = b.step("audio-capture", "Run the audio-capture example");
+
+        const run_cmd = b.addRunArtifact(audio_capture);
+        run_step.dependOn(&run_cmd.step);
+
+        run_cmd.step.dependOn(b.getInstallStep());
+
+        if (b.args) |args| {
+            run_cmd.addArgs(args);
+        }
+    }
 }
 
 /// Flags used for the vararg wrapper.
